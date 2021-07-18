@@ -61,7 +61,10 @@ namespace SharpHound3
         public bool InvalidateCache { get; set; }
 
         [Option(HelpText = "Store JSON files (prior to being zipped) in-memory rather than on-disk")]
-        public bool MemoryOnlyJSONFiles { get; set; }
+        public bool MemoryOnlyJSON { get; set; }
+
+        [Option(HelpText = "Store ZIP files in-memory rather than on-disk and forward to Beacon using BOF.NET")]
+        public bool MemoryOnlyZIP { get; set; }
 
         //Connection Options
         [Option(HelpText = "Custom LDAP Filter to append to the search. Use this to filter collection", Default = null)]
@@ -84,7 +87,6 @@ namespace SharpHound3
 
         [Option(HelpText = "Password to use for LDAP", Default = null)]
         public string LdapPassword { get; set; }
-
 
         //Enumeration Options
         [Option(HelpText = "Base DistinguishedName to start search at. Use this to limit your search. Equivalent to the old --OU option", Default = null)]

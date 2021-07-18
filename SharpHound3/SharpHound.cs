@@ -5,17 +5,20 @@ using System.Threading.Tasks;
 using System.Timers;
 using CommandLine;
 using SharpHound3.Tasks;
+using BOFNET;
 
 namespace SharpHound3
 {
-    internal class SharpHound
+    internal partial class SharpHound : BeaconObject
     {
+        public SharpHound(BeaconApi api) : base(api) { }
+
         /// <summary>
         /// Entry point for SharpHound. 
         /// </summary>
         /// <param name="args"></param>
         /// <returns></returns>
-        private static async Task Main(string[] args)
+        public static async Task Main(string[] args)
         {
             // Use the wonderful commandlineparser library to build our options.
             var parser = new Parser(with =>
@@ -92,7 +95,6 @@ namespace SharpHound3
                     Console.WriteLine("Unable to determine user's domain. Please manually specify it with the --domain flag");
                     return;
                 }
-                
 
             //Check to make sure both LDAP options are set if either is set
             if ((options.LdapPassword != null && options.LdapUsername == null) ||
@@ -106,7 +108,7 @@ namespace SharpHound3
             var searcher = Helpers.GetDirectorySearcher(options.Domain);
             var result = await searcher.GetOne("(objectclass=domain)", new[] { "objectsid" },
                 SearchScope.Subtree);
-
+            
             //If we get nothing back from LDAP, something is wrong
             if (result == null)
             {
@@ -136,6 +138,27 @@ namespace SharpHound3
                 timer.Start();
             }
 
+            if (options.MemoryOnlyZIP)
+            {
+                if (SharpHound3.BOFNET.bofnet == null)
+                {
+                    Console.WriteLine("Requested to send in-memory ZIP files to Beacon, but the BOF.NET connector could not be found.");
+                    return;
+                }
+
+                if (options.MemoryOnlyJSON == false)
+                {
+                    Console.WriteLine("The --MemoryOnlyZIP flag must be used in combination with --MemoryOnlyJSON.");
+                    return;
+                }
+
+                //if (options.Loop)
+                //{
+                //    Console.WriteLine("The --MemoryOnlyZIP flag is (currently) incompatible with --Loop.");
+                //    return;
+                //}
+            }
+
             //Create our Cache
             Cache.CreateInstance();
 
@@ -147,7 +170,7 @@ namespace SharpHound3
 
             //Wait for output to complete
             await pipelineCompletionTask;
-
+            
             //Wait for our output tasks to finish.
             await OutputTasks.CompleteOutput();
 
