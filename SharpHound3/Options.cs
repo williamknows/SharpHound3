@@ -54,17 +54,23 @@ namespace SharpHound3
         [Option(HelpText = "Encrypt zip file using a random password", Default = false)]
         public bool EncryptZip { get; set; }
 
-        [Option(HelpText = "Don't zip JSON files")]
+        [Option(HelpText = "Don't zip JSON files", Default = false)]
         public bool NoZip { get; set; }
 
-        [Option(HelpText = "Invalidate and rebuild the cache")]
+        [Option(HelpText = "Invalidate and rebuild the cache", Default = false)]
         public bool InvalidateCache { get; set; }
 
-        [Option(HelpText = "Store JSON files (prior to being zipped) in-memory rather than on-disk")]
+        [Option(HelpText = "Store JSON files (prior to being zipped) in-memory rather than on-disk", Default = false)]
         public bool MemoryOnlyJSON { get; set; }
 
-        [Option(HelpText = "Store ZIP files in-memory rather than on-disk and forward to Beacon using BOF.NET")]
-        public bool MemoryOnlyZIP { get; set; }
+        [Option(HelpText = "Store ZIP files in-memory rather than on-disk. Final ZIP is forwarded to Beacon as a downloaded file using BOF.NET", Default = false)]
+        public bool MemoryOnlyZIPToBOFNET { get; set; }
+
+        [Option(HelpText = "Store ZIP files in-memory rather than on-disk. Final ZIP is stored in a section object", Default = false)]
+        public bool MemoryOnlyZIPToSectionObject { get; set; }
+
+        [Option(HelpText = "When storing the ZIP in a section object this prevents the assembly from exiting (requiring user input to proceed). This ensures the section object is not cleaned up by the garbage collector", Default = false)]
+        public bool MemoryOnlyZIPToSectionObjectBlockExit { get; set; }
 
         //Connection Options
         [Option(HelpText = "Custom LDAP Filter to append to the search. Use this to filter collection", Default = null)]

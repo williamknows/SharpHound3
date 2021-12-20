@@ -3,7 +3,9 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.MemoryMappedFiles;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Security.Principal;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -38,6 +40,8 @@ namespace SharpHound3.Tasks
         private static readonly BlockingCollection<ComputerStatus> ComputerStatusQueue = new BlockingCollection<ComputerStatus>();
         internal static readonly Lazy<string> ZipPasswords = new Lazy<string>(GenerateZipPassword);
         internal static ConcurrentDictionary<string, string> SeenCommonPrincipals = new ConcurrentDictionary<string, string>();
+        private static MemoryMappedFile mmfZIPToSectionObject;
+        private static MemoryMappedViewStream mmvsZIPToSectionObject;
 
         internal static void StartOutputTimer()
         {
@@ -289,7 +293,7 @@ namespace SharpHound3.Tasks
                 zipStream.Close();
                 zipOutputMemoryStream.Position = 0;
 
-                if (options.MemoryOnlyZIP)
+                if (options.MemoryOnlyZIPToBOFNET || options.MemoryOnlyZIPToSectionObject)
                 {
                     // Track ZIP files in-memory for collation at the end of the loop. These could also be sent back individually.
                     if (options.Loop)
@@ -298,7 +302,28 @@ namespace SharpHound3.Tasks
                     }
                     else
                     {
-                        SharpHound3.BOFNET.bofnet.PassDownloadFile(finalName, ref zipOutputMemoryStream);
+                        if (options.MemoryOnlyZIPToBOFNET)
+                        {
+                            SharpHound3.BOFNET.bofnet.PassDownloadFile(finalName, ref zipOutputMemoryStream);
+                        }
+                        else
+                        {
+                            // No using statement, as we don't want the section object to close
+                            string soName = Guid.NewGuid().ToString();
+                            int zipLengthAsInt = Convert.ToInt32(zipOutputMemoryStream.Length);
+                            int totalLength = zipLengthAsInt + sizeof(int);
+                            mmfZIPToSectionObject = MemoryMappedFile.CreateNew(soName, totalLength, MemoryMappedFileAccess.ReadWrite);
+                            mmvsZIPToSectionObject = mmfZIPToSectionObject.CreateViewStream(0, totalLength, MemoryMappedFileAccess.ReadWrite);
+                            // Convert int to bytes
+                            byte[] zipLengthAsBytes = BitConverter.GetBytes(zipLengthAsInt);
+                            byte[] result = zipLengthAsBytes;
+                            // Write to section object
+                            mmvsZIPToSectionObject.Write(zipLengthAsBytes, 0, sizeof(int)); // zip length
+                            mmvsZIPToSectionObject.Write(zipOutputMemoryStream.ToArray(), 0, zipLengthAsInt); // zip data
+                            Console.WriteLine("ZIP ({0} bytes) stored in a section object.  Use the following names to access it:", zipLengthAsInt);
+                            Console.WriteLine("   Windows API (OpenFileMapping): {0}", soName);
+                            Console.WriteLine("   System call (NtOpenSection): \\Sessions\\{0}\\BaseNamedObjects\\{1}", Process.GetCurrentProcess().SessionId.ToString(), soName);
+                        }
                     }
                 }
                 else
@@ -351,6 +376,23 @@ namespace SharpHound3.Tasks
                 ZipFileNames.Add(finalName);
 
             UsedFileNames.Clear();
+
+            if (options.MemoryOnlyZIPToSectionObjectBlockExit)
+            {
+                Console.WriteLine("Execution paused to ensure availability of section object containing the output ZIP file.  Enter \"Y\" to continue execution.");
+                bool proceedExecution = false;
+                while (proceedExecution == false)
+                {
+                    string userInput = Console.ReadLine();
+                    if (userInput == "Y")
+                    {
+                        proceedExecution = true;
+                    }
+                }
+                // The following lines are just to maintain "future" references to the objects to prevent garbage collection.
+                mmvsZIPToSectionObject.GetType();
+                mmfZIPToSectionObject.GetType();
+            }
         }
 
         internal static List<MemoryStream> ZIPFilesToReturn = new List<MemoryStream>();
@@ -386,7 +428,7 @@ namespace SharpHound3.Tasks
 
             ZipOutputStream zipStream;
             MemoryStream zipOutputMemoryStream = new MemoryStream();
-            if (options.MemoryOnlyZIP)
+            if (options.MemoryOnlyZIPToBOFNET)
             {
                 zipStream = new ZipOutputStream(zipOutputMemoryStream);
             }
@@ -413,7 +455,7 @@ namespace SharpHound3.Tasks
                 Console.WriteLine("Unzip the zip file and upload the other zips to the interface");
             }
 
-            if (options.MemoryOnlyZIP)
+            if (options.MemoryOnlyZIPToBOFNET)
             {
                 foreach (var ZIPFile in ZIPFilesToReturn)
                 {
@@ -619,5 +661,44 @@ namespace SharpHound3.Tasks
             }
 
         }
+
+        [Flags]
+        private enum FileMapProtection : uint
+        {
+            PageReadonly = 0x02,
+            PageReadWrite = 0x04,
+            PageWriteCopy = 0x08,
+            PageExecuteRead = 0x20,
+            PageExecuteReadWrite = 0x40,
+            SectionCommit = 0x8000000,
+            SectionImage = 0x1000000,
+            SectionNoCache = 0x10000000,
+            SectionReserve = 0x4000000,
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+        private static extern IntPtr CreateFileMapping(
+            IntPtr hFile,
+            IntPtr lpFileMappingAttributes,
+            FileMapProtection flProtect,
+            uint dwMaximumSizeHigh,
+            uint dwMaximumSizeLow,
+            [MarshalAs(UnmanagedType.LPStr)] string lpName);
+
+        private enum FileMapAccessType : uint
+        {
+            Copy = 0x01,
+            Write = 0x02,
+            Read = 0x04,
+            AllAccess = 0x08,
+            Execute = 0x20,
+        }
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr MapViewOfFile(IntPtr hFileMappingObject,
+           FileMapAccessType dwDesiredAccess, uint dwFileOffsetHigh, uint dwFileOffsetLow,
+           UIntPtr dwNumberOfBytesToMap);
+
+        static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
     }
 }

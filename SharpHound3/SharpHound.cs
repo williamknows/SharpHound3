@@ -138,25 +138,43 @@ namespace SharpHound3
                 timer.Start();
             }
 
-            if (options.MemoryOnlyZIP)
+            if (options.MemoryOnlyZIPToBOFNET && options.MemoryOnlyZIPToSectionObject)
+            {
+                Console.WriteLine("You can only select one memory-only output option between --MemoryOnlyZIPToBOFNET and --MemoryOnlyZIPToSectionObject.");
+                return;
+            }
+
+            if (options.MemoryOnlyZIPToBOFNET)
             {
                 if (SharpHound3.BOFNET.bofnet == null)
                 {
                     Console.WriteLine("Requested to send in-memory ZIP files to Beacon, but the BOF.NET connector could not be found.");
                     return;
                 }
+            }
 
-                if (options.MemoryOnlyJSON == false)
+            if (options.MemoryOnlyZIPToSectionObject)
+            {
+                if (options.Loop)
                 {
-                    Console.WriteLine("The --MemoryOnlyZIP flag must be used in combination with --MemoryOnlyJSON.");
+                    Console.WriteLine("The --MemoryOnlyZIPToSectionObject flag is incompatible with --Loop.");
                     return;
                 }
+            }
 
-                //if (options.Loop)
-                //{
-                //    Console.WriteLine("The --MemoryOnlyZIP flag is (currently) incompatible with --Loop.");
-                //    return;
-                //}
+            if ((options.MemoryOnlyZIPToSectionObjectBlockExit == true) && (options.MemoryOnlyZIPToSectionObject == false))
+            {
+                Console.WriteLine("The --MemoryOnlyZIPToSectionObjectBlockExit flag requires --MemoryOnlyZIPToSectionObject.");
+                return;
+            }
+
+            if (options.MemoryOnlyZIPToBOFNET || options.MemoryOnlyZIPToSectionObject)
+            {
+                if (options.MemoryOnlyJSON == false)
+                {
+                    Console.WriteLine("The --MemoryOnlyZIPToBOFNET and --MemoryOnlyZIPToSectionObject flags must be used in combination with --MemoryOnlyJSON.");
+                    return;
+                }
             }
 
             //Create our Cache

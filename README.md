@@ -48,6 +48,10 @@ SharpHound is designed targetting .Net 4.5. Sharphound must be run from the cont
 - **RealDNSName** - Overrides DNS name for API calls
 - **CollectAllProperties** - Collect all string LDAP properties instead of a subset
 - **WindowsOnly** - Limit computer collection to systems with an operating system that matches \*Windows\*
+- **MemoryOnlyJSON** - Store JSON files (prior to being zipped) in-memory rather than on-disk
+- **MemoryOnlyZIPToBOFNET** - Store ZIP files in-memory rather than on-disk. Final ZIP is forwarded to Beacon as a downloaded file using BOF.NET
+- **MemoryOnlyZIPToSectionObject** - Store ZIP files in-memory rather than on-disk. Final ZIP is stored in a section object
+- **MemoryOnlyZIPToSectionObjectBlockExit** - When storing the ZIP in a section object this prevents the assembly from exiting (requiring user input to proceed). This ensures the section object is not cleaned up by the garbage collector
 
 ### Loop Options
 
