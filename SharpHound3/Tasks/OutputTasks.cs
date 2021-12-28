@@ -377,7 +377,7 @@ namespace SharpHound3.Tasks
 
             UsedFileNames.Clear();
 
-            if (options.MemoryOnlyZIPToSectionObjectBlockExit)
+            if (options.BlockExit)
             {
                 Console.WriteLine("Execution paused to ensure availability of section object containing the output ZIP file.  Enter \"Y\" to continue execution.");
                 bool proceedExecution = false;
@@ -661,44 +661,5 @@ namespace SharpHound3.Tasks
             }
 
         }
-
-        [Flags]
-        private enum FileMapProtection : uint
-        {
-            PageReadonly = 0x02,
-            PageReadWrite = 0x04,
-            PageWriteCopy = 0x08,
-            PageExecuteRead = 0x20,
-            PageExecuteReadWrite = 0x40,
-            SectionCommit = 0x8000000,
-            SectionImage = 0x1000000,
-            SectionNoCache = 0x10000000,
-            SectionReserve = 0x4000000,
-        }
-
-        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        private static extern IntPtr CreateFileMapping(
-            IntPtr hFile,
-            IntPtr lpFileMappingAttributes,
-            FileMapProtection flProtect,
-            uint dwMaximumSizeHigh,
-            uint dwMaximumSizeLow,
-            [MarshalAs(UnmanagedType.LPStr)] string lpName);
-
-        private enum FileMapAccessType : uint
-        {
-            Copy = 0x01,
-            Write = 0x02,
-            Read = 0x04,
-            AllAccess = 0x08,
-            Execute = 0x20,
-        }
-
-        [DllImport("kernel32.dll")]
-        private static extern IntPtr MapViewOfFile(IntPtr hFileMappingObject,
-           FileMapAccessType dwDesiredAccess, uint dwFileOffsetHigh, uint dwFileOffsetLow,
-           UIntPtr dwNumberOfBytesToMap);
-
-        static readonly IntPtr INVALID_HANDLE_VALUE = new IntPtr(-1);
     }
 }

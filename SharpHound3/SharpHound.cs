@@ -162,9 +162,9 @@ namespace SharpHound3
                 }
             }
 
-            if ((options.MemoryOnlyZIPToSectionObjectBlockExit == true) && (options.MemoryOnlyZIPToSectionObject == false))
+            if ((options.BlockExit == true) && (options.MemoryOnlyZIPToSectionObject == false))
             {
-                Console.WriteLine("The --MemoryOnlyZIPToSectionObjectBlockExit flag requires --MemoryOnlyZIPToSectionObject.");
+                Console.WriteLine("The --BlockExit flag requires --MemoryOnlyZIPToSectionObject.");
                 return;
             }
 

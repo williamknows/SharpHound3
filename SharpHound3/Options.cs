@@ -70,7 +70,7 @@ namespace SharpHound3
         public bool MemoryOnlyZIPToSectionObject { get; set; }
 
         [Option(HelpText = "When storing the ZIP in a section object this prevents the assembly from exiting (requiring user input to proceed). This ensures the section object is not cleaned up by the garbage collector", Default = false)]
-        public bool MemoryOnlyZIPToSectionObjectBlockExit { get; set; }
+        public bool BlockExit { get; set; }
 
         //Connection Options
         [Option(HelpText = "Custom LDAP Filter to append to the search. Use this to filter collection", Default = null)]
